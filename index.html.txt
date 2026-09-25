@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekend Planner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .drag-over {
+            border-color: #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
+            transform: scale(1.01);
+        }
+        .dragging {
+            opacity: 0.4;
+            transform: scale(0.98);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+    <!-- Navigation / Header -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 transition-colors">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-tr from-sky-500 to-indigo-600 rounded-2xl text-white shadow-md shadow-sky-500/20">
+                    <i data-lucide="calendar-range" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                        Weekend Hub
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Map out every weekend of your year</p>
+                </div>
+            </div>
+
+            <!-- Year Selector & Global Actions -->
+            <div class="flex items-center flex-wrap gap-2 sm:gap-4">
+                
+                <!-- Year Selector Controls -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+                    <button id="prev-year-btn" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition" title="Previous Year">
+                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    </button>
+                    <span id="current-year-display" class="px-4 font-bold text-lg text-slate-800 dark:text-slate-100 min-w-[70px] text-center">2026</span>
+                    <button id="next-year-btn" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition" title="Next Year">
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Utilities Header Buttons -->
+                <div class="flex items-center gap-1.5 border-l border-slate-200 dark:border-slate-700 pl-2 sm:pl-4">
+                    <button id="sample-data-btn" class="px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+                        <span class="hidden md:inline">Sample Data</span>
+                    </button>
+                    
+                    <button id="export-json-btn" class="px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition" title="Export Plans JSON">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden md:inline">Export</span>
+                    </button>
+
+                    <button id="clear-year-btn" class="px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg border border-rose-200 dark:border-rose-900/50 flex items-center gap-1.5 transition" title="Clear All Year Plans">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span class="hidden md:inline">Clear</span>
+                    </button>
+
+                    <button id="theme-toggle" class="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition ml-1" title="Toggle Theme">
+                        <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
+
+        <!-- Summary Statistics Cards -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <!-- Total Weekends -->
+            <div class="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+                <div class="p-3 bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 rounded-xl">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Weekends</p>
+                    <h3 id="stat-total" class="text-xl font-bold text-slate-800 dark:text-slate-100">0</h3>
+                </div>
+            </div>
+
+            <!-- Confirmed Days -->
+            <div class="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+                <div class="p-3 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Confirmed Days</p>
+                    <h3 id="stat-confirmed" class="text-xl font-bold text-emerald-600 dark:text-emerald-400">0</h3>
+                </div>
+            </div>
+
+            <!-- Draft Days -->
+            <div class="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+                <div class="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Draft Ideas</p>
+                    <h3 id="stat-drafts" class="text-xl font-bold text-amber-600 dark:text-amber-400">0</h3>
+                </div>
+            </div>
+
+            <!-- Free Days -->
+            <div class="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+                <div class="p-3 bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded-xl">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Free Open Days</p>
+                    <h3 id="stat-free" class="text-xl font-bold text-slate-600 dark:text-slate-300">0</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter & Search Controls Bar -->
+        <section class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Search & Filters -->
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto flex-1">
+                <!-- Search Box -->
+                <div class="relative min-w-[220px] flex-1 max-w-xs">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="search-input" placeholder="Search plans or tags..." class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100 placeholder-slate-400">
+                </div>
+
+                <!-- Month Quick Jump Selector -->
+                <div class="relative">
+                    <select id="month-filter" class="appearance-none pl-3 pr-8 py-2 text-sm bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-700 dark:text-slate-200 cursor-pointer">
+                        <option value="all">All Months</option>
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                </div>
+
+                <!-- Status Filter Toggle Group -->
+                <div class="flex items-center p-1 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                    <button data-status-filter="all" class="status-filter-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-800 dark:text-white bg-white dark:bg-slate-800 shadow-sm">All</button>
+                    <button data-status-filter="confirmed" class="status-filter-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900">Confirmed</button>
+                    <button data-status-filter="draft" class="status-filter-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900">Drafts</button>
+                    <button data-status-filter="unplanned" class="status-filter-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900">Free</button>
+                </div>
+            </div>
+
+            <!-- Layout View Switcher -->
+            <div class="flex items-center gap-2 self-end md:self-auto">
+                <span class="text-xs text-slate-400 font-medium hidden sm:inline">View:</span>
+                <div class="flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                    <button id="view-grid-btn" class="p-1.5 rounded-lg text-slate-800 dark:text-white bg-white dark:bg-slate-800 shadow-sm transition" title="Grid View">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    </button>
+                    <button id="view-list-btn" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition" title="List View">
+                        <i data-lucide="list" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Weekend Grid Container -->
+        <section id="weekends-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Dynamically Populated Weekend Cards Go Here -->
+        </section>
+
+        <!-- Empty State Container (Hidden by default) -->
+        <div id="empty-state" class="hidden flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 my-8">
+            <div class="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-full text-slate-400 mb-3">
+                <i data-lucide="search-x" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-200">No weekend plans match your criteria</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md">Try resetting your status filters or search term to see more weekends.</p>
+            <button id="reset-filters-btn" class="mt-4 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl transition">
+                Reset Filters
+            </button>
+        </div>
+    </main>
+
+    <!-- Plan Modal for Editing Details -->
+    <div id="plan-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform scale-95 transition-transform duration-200">
+            
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                <div>
+                    <h3 id="modal-date-display" class="font-bold text-lg text-slate-800 dark:text-slate-100">Edit Weekend Plan</h3>
+                    <p id="modal-day-subtitle" class="text-xs text-sky-600 dark:text-sky-400 font-medium">Saturday, Jan 3, 2026</p>
+                </div>
+                <button id="close-modal-btn" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="plan-form" class="p-6 space-y-4">
+                <input type="hidden" id="modal-date-key">
+
+                <!-- Plan Title -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Plan Title</label>
+                    <input type="text" id="modal-title" placeholder="e.g. Hike at National Park, Dinner with friends..." required class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100">
+                </div>
+
+                <!-- Status Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Status</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="modal-status" value="unplanned" class="peer sr-only">
+                            <div class="py-2 text-center text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-slate-500 peer-checked:bg-slate-100 dark:peer-checked:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
+                                Free / None
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="modal-status" value="draft" class="peer sr-only">
+                            <div class="py-2 text-center text-xs font-semibold rounded-xl border border-amber-200 dark:border-amber-900/50 peer-checked:border-amber-500 peer-checked:bg-amber-50 dark:peer-checked:bg-amber-950/40 text-amber-700 dark:text-amber-400 transition">
+                                Draft
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="modal-status" value="confirmed" class="peer sr-only">
+                            <div class="py-2 text-center text-xs font-semibold rounded-xl border border-emerald-200 dark:border-emerald-900/50 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 transition">
+                                Confirmed
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Category Tag Selection -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Category Tag</label>
+                    <select id="modal-tag" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100">
+                        <option value="Social">👥 Social & Family</option>
+                        <option value="Travel">✈️ Travel & Trip</option>
+                        <option value="Outdoor">🌲 Outdoor & Sports</option>
+                        <option value="Relax">🧘 Relax & Wellness</option>
+                        <option value="Event">🎟️ Concert / Event</option>
+                        <option value="Chores">🏡 Home & Chores</option>
+                        <option value="General">📌 General Activity</option>
+                    </select>
+                </div>
+
+                <!-- Notes / Description -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Details & Notes</label>
+                    <textarea id="modal-notes" rows="3" placeholder="Add location details, time, tickets info, or reminders..." class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100 resize-none"></textarea>
+                </div>
+
+                <!-- Estimated Budget -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Estimated Budget / Cost</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                        <input type="number" id="modal-budget" placeholder="0" min="0" step="5" class="w-full pl-8 pr-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100">
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/80">
+                    <button type="button" id="modal-delete-btn" class="px-4 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-1.5">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Clear Plan
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="modal-cancel-btn" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-md shadow-sky-600/20 transition">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Weekend Planner Core Application Engine
+         */
+
+        // State Management
+        const state = {
+            currentYear: new Date().getFullYear(),
+            plans: {}, // Format: { "YYYY-MM-DD": { title: "", status: "draft"|"confirmed"|"unplanned", tag: "", notes: "", budget: "" } }
+            filterStatus: 'all',
+            filterMonth: 'all',
+            searchQuery: '',
+            viewMode: 'grid', // 'grid' | 'list'
+            draggedDateKey: null
+        };
+
+        // DOM Element Cache
+        const elements = {
+            currentYearDisplay: document.getElementById('current-year-display'),
+            prevYearBtn: document.getElementById('prev-year-btn'),
+            nextYearBtn: document.getElementById('next-year-btn'),
+            weekendsContainer: document.getElementById('weekends-container'),
+            emptyState: document.getElementById('empty-state'),
+            searchInput: document.getElementById('search-input'),
+            monthFilter: document.getElementById('month-filter'),
+            statusFilterBtns: document.querySelectorAll('.status-filter-btn'),
+            viewGridBtn: document.getElementById('view-grid-btn'),
+            viewListBtn: document.getElementById('view-list-btn'),
+            themeToggle: document.getElementById('theme-toggle'),
+            sampleDataBtn: document.getElementById('sample-data-btn'),
+            clearYearBtn: document.getElementById('clear-year-btn'),
+            exportJsonBtn: document.getElementById('export-json-btn'),
+            resetFiltersBtn: document.getElementById('reset-filters-btn'),
+            
+            // Stats
+            statTotal: document.getElementById('stat-total'),
+            statConfirmed: document.getElementById('stat-confirmed'),
+            statDrafts: document.getElementById('stat-drafts'),
+            statFree: document.getElementById('stat-free'),
+
+            // Modal
+            planModal: document.getElementById('plan-modal'),
+            planForm: document.getElementById('plan-form'),
+            modalDateKey: document.getElementById('modal-date-key'),
+            modalDateDisplay: document.getElementById('modal-date-display'),
+            modalDaySubtitle: document.getElementById('modal-day-subtitle'),
+            modalTitle: document.getElementById('modal-title'),
+            modalTag: document.getElementById('modal-tag'),
+            modalNotes: document.getElementById('modal-notes'),
+            modalBudget: document.getElementById('modal-budget'),
+            closeModalBtn: document.getElementById('close-modal-btn'),
+            modalCancelBtn: document.getElementById('modal-cancel-btn'),
+            modalDeleteBtn: document.getElementById('modal-delete-btn')
+        };
+
+        /**
+         * Date helper to retrieve all weekend pairs (Saturday & Sunday) for a given year
+         */
+        function getWeekendsOfYear(year) {
+            const weekends = [];
+            let date = new Date(year, 0, 1);
+
+            // Find first Saturday of the year
+            while (date.getDay() !== 6) {
+                date.setDate(date.getDate() + 1);
+            }
+
+            let weekendIndex = 1;
+            while (date.getFullYear() <= year) {
+                const saturday = new Date(date);
+                const sunday = new Date(date);
+                sunday.setDate(sunday.getDate() + 1);
+
+                // Ensure Sunday hasn't spilled over into next year unexpectedly (e.g. boundary checks)
+                if (saturday.getFullYear() === year) {
+                    weekends.push({
+                        index: weekendIndex++,
+                        saturday: formatDateKey(saturday),
+                        saturdayObj: saturday,
+                        sunday: formatDateKey(sunday),
+                        sundayObj: sunday
+                    });
+                }
+
+                // Advance by 7 days to next Saturday
+                date.setDate(date.getDate() + 7);
+            }
+
+            return weekends;
+        }
+
+        function formatDateKey(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatNiceDate(dateKey) {
+            const [y, m, d] = dateKey.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function formatFullNiceDate(dateKey) {
+            const [y, m, d] = dateKey.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
+            return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        }
+
+        function loadStorageData() {
+            try {
+                const stored = localStorage.getItem('weekend_hub_plans');
+                if (stored) {
+                    state.plans = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error('Error loading plans from storage', e);
+            }
+        }
+
+        function saveStorageData() {
+            try {
+                localStorage.setItem('weekend_hub_plans', JSON.stringify(state.plans));
+            } catch (e) {
+                console.error('Error saving plans to storage', e);
+            }
+        }
+
+        function renderApp() {
+            elements.currentYearDisplay.textContent = state.currentYear;
+            const weekends = getWeekendsOfYear(state.currentYear);
+            
+            // Calculate statistics
+            updateStats(weekends);
+
+            // Filter logic
+            const filteredWeekends = filterWeekends(weekends);
+
+            // Render container grid / list
+            elements.weekendsContainer.innerHTML = '';
+
+            if (filteredWeekends.length === 0) {
+                elements.emptyState.classList.remove('hidden');
+                elements.emptyState.classList.add('flex');
+            } else {
+                elements.emptyState.classList.add('hidden');
+                elements.emptyState.classList.remove('flex');
+
+                if (state.viewMode === 'list') {
+                    elements.weekendsContainer.className = 'flex flex-col gap-4';
+                } else {
+                    elements.weekendsContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+                }
+
+                let currentMonthHeader = -1;
+
+                filteredWeekends.forEach(w => {
+                    const satMonth = w.saturdayObj.getMonth();
+
+                    // Optional month separator if viewing all months in chronological sequence
+                    if (state.filterMonth === 'all' && satMonth !== currentMonthHeader) {
+                        currentMonthHeader = satMonth;
+                        const monthName = w.saturdayObj.toLocaleDateString('en-US', { month: 'long' });
+                        const monthDivider = document.createElement('div');
+                        monthDivider.className = 'col-span-full pt-4 border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center justify-between';
+                        monthDivider.innerHTML = `
+                            <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                                ${monthName} ${state.currentYear}
+                            </h2>
+                        `;
+                        elements.weekendsContainer.appendChild(monthDivider);
+                    }
+
+                    const card = createWeekendCard(w);
+                    elements.weekendsContainer.appendChild(card);
+                });
+            }
+
+            // Re-initialize Lucide Icons for dynamic content
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        function filterWeekends(weekends) {
+            return weekends.filter(w => {
+                const satPlan = state.plans[w.saturday] || { status: 'unplanned' };
+                const sunPlan = state.plans[w.sunday] || { status: 'unplanned' };
+
+                // Month Filter
+                if (state.filterMonth !== 'all') {
+                    const targetMonth = parseInt(state.filterMonth);
+                    if (w.saturdayObj.getMonth() !== targetMonth && w.sundayObj.getMonth() !== targetMonth) {
+                        return false;
+                    }
+                }
+
+                // Status Filter
+                if (state.filterStatus !== 'all') {
+                    if (satPlan.status !== state.filterStatus && sunPlan.status !== state.filterStatus) {
+                        return false;
+                    }
+                }
+
+                // Search Query Filter
+                if (state.searchQuery.trim() !== '') {
+                    const q = state.searchQuery.toLowerCase();
+                    const satMatch = (satPlan.title && satPlan.title.toLowerCase().includes(q)) || 
+                                     (satPlan.tag && satPlan.tag.toLowerCase().includes(q)) || 
+                                     (satPlan.notes && satPlan.notes.toLowerCase().includes(q));
+                    const sunMatch = (sunPlan.title && sunPlan.title.toLowerCase().includes(q)) || 
+                                     (sunPlan.tag && sunPlan.tag.toLowerCase().includes(q)) || 
+                                     (sunPlan.notes && sunPlan.notes.toLowerCase().includes(q));
+                    if (!satMatch && !sunMatch) return false;
+                }
+
+                return true;
+            });
+        }
+
+        function updateStats(weekends) {
+            let totalDays = weekends.length * 2;
+            let confirmedCount = 0;
+            let draftCount = 0;
+
+            weekends.forEach(w => {
+                const satStatus = state.plans[w.saturday]?.status || 'unplanned';
+                const sunStatus = state.plans[w.sunday]?.status || 'unplanned';
+
+                if (satStatus === 'confirmed') confirmedCount++;
+                if (satStatus === 'draft') draftCount++;
+
+                if (sunStatus === 'confirmed') confirmedCount++;
+                if (sunStatus === 'draft') draftCount++;
+            });
+
+            const freeCount = totalDays - (confirmedCount + draftCount);
+
+            elements.statTotal.textContent = weekends.length;
+            elements.statConfirmed.textContent = confirmedCount;
+            elements.statDrafts.textContent = draftCount;
+            elements.statFree.textContent = freeCount;
+        }
+
+        function createWeekendCard(weekend) {
+            const card = document.createElement('div');
+            card.className = 'bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col';
+
+            const satPlan = state.plans[weekend.saturday] || { status: 'unplanned', title: '', tag: 'General', notes: '', budget: '' };
+            const sunPlan = state.plans[weekend.sunday] || { status: 'unplanned', title: '', tag: 'General', notes: '', budget: '' };
+
+            card.innerHTML = `
+                <!-- Weekend Header -->
+                <div class="px-4 py-3 bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Weekend #${weekend.index}
+                    </span>
+                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        ${weekend.saturdayObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekend.sundayObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                </div>
+
+                <!-- Days Slot Container -->
+                <div class="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                    ${createDaySlotMarkup(weekend.saturday, 'Saturday', satPlan)}
+                    ${createDaySlotMarkup(weekend.sunday, 'Sunday', sunPlan)}
+                </div>
+            `;
+
+            // Setup Event Handlers (Drag and Drop + Actions)
+            setupDaySlotEvents(card);
+
+            return card;
+        }
+
+        function createDaySlotMarkup(dateKey, dayLabel, plan) {
+            const isConfirmed = plan.status === 'confirmed';
+            const isDraft = plan.status === 'draft';
+            const hasPlan = plan.title && plan.title.trim() !== '';
+
+            // Color coding theme styles
+            let statusBadgeClass = 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600';
+            let cardBgClass = 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-700/50';
+
+            if (isConfirmed) {
+                statusBadgeClass = 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800';
+                cardBgClass = 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40';
+            } else if (isDraft) {
+                statusBadgeClass = 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800';
+                cardBgClass = 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40';
+            }
+
+            return `
+                <div class="day-slot p-3 rounded-xl border transition-all relative ${cardBgClass}"
+                     data-date-key="${dateKey}"
+                     draggable="${hasPlan ? 'true' : 'false'}">
+                    
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <!-- Date & Day Label -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">${dayLabel}</span>
+                            <span class="text-[11px] text-slate-400 dark:text-slate-500">${formatNiceDate(dateKey)}</span>
+                        </div>
+
+                        <!-- Status Toggle Switcher -->
+                        <div class="flex items-center gap-1">
+                            <select data-action="status-select" data-date-key="${dateKey}" class="status-select text-[11px] font-semibold py-0.5 px-2 rounded-lg border ${statusBadgeClass} focus:outline-none cursor-pointer">
+                                <option value="unplanned" ${plan.status === 'unplanned' ? 'selected' : ''}>Unplanned</option>
+                                <option value="draft" ${plan.status === 'draft' ? 'selected' : ''}>Draft</option>
+                                <option value="confirmed" ${plan.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Plan Field / Interactive Block -->
+                    <div class="flex items-center justify-between gap-2 group cursor-pointer" data-action="edit-plan" data-date-key="${dateKey}">
+                        <div class="flex-1 min-w-0">
+                            ${hasPlan ? `
+                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">${escapeHtml(plan.title)}</p>
+                                <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                    ${plan.tag ? `<span class="text-[10px] px-2 py-0.5 rounded-md bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium">${plan.tag}</span>` : ''}
+                                    ${plan.budget ? `<span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">$${plan.budget}</span>` : ''}
+                                    ${plan.notes ? `<i data-lucide="align-left" class="w-3 h-3 text-slate-400" title="${escapeHtml(plan.notes)}"></i>` : ''}
+                                </div>
+                            ` : `
+                                <p class="text-xs italic text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition flex items-center gap-1 py-1">
+                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Click to add weekend plan...
+                                </p>
+                            `}
+                        </div>
+
+                        ${hasPlan ? `
+                            <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                <button type="button" class="p-1 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 rounded text-slate-500" title="Edit Plan">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function setupDaySlotEvents(cardElement) {
+            // Status Select Handler
+            const statusSelects = cardElement.querySelectorAll('[data-action="status-select"]');
+            statusSelects.forEach(select => {
+                select.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    const dateKey = select.getAttribute('data-date-key');
+                    const newStatus = select.value;
+
+                    if (!state.plans[dateKey]) {
+                        state.plans[dateKey] = { title: '', tag: 'General', notes: '', budget: '' };
+                    }
+                    state.plans[dateKey].status = newStatus;
+                    saveStorageData();
+                    renderApp();
+                });
+            });
+
+            // Edit Click Handlers
+            const editAreas = cardElement.querySelectorAll('[data-action="edit-plan"]');
+            editAreas.forEach(area => {
+                area.addEventListener('click', () => {
+                    const dateKey = area.getAttribute('data-date-key');
+                    openEditModal(dateKey);
+                });
+            });
+
+            // HTML5 Drag and Drop Handlers
+            const daySlots = cardElement.querySelectorAll('.day-slot');
+            daySlots.forEach(slot => {
+                
+                // Drag Start
+                slot.addEventListener('dragstart', (e) => {
+                    const dateKey = slot.getAttribute('data-date-key');
+                    state.draggedDateKey = dateKey;
+                    slot.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', dateKey);
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                // Drag End
+                slot.addEventListener('dragend', () => {
+                    slot.classList.remove('dragging');
+                    state.draggedDateKey = null;
+                });
+
+                // Drag Over
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    slot.classList.add('drag-over');
+                });
+
+                // Drag Leave
+                slot.addEventListener('dragleave', () => {
+                    slot.classList.remove('drag-over');
+                });
+
+                // Drop Event
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    slot.classList.remove('drag-over');
+                    const targetDateKey = slot.getAttribute('data-date-key');
+                    const sourceDateKey = state.draggedDateKey || e.dataTransfer.getData('text/plain');
+
+                    if (sourceDateKey && targetDateKey && sourceDateKey !== targetDateKey) {
+                        swapOrMovePlans(sourceDateKey, targetDateKey);
+                    }
+                });
+            });
+        }
+
+        // Swap/Move Plans Logic
+        function swapOrMovePlans(sourceKey, targetKey) {
+            const sourcePlan = state.plans[sourceKey] ? { ...state.plans[sourceKey] } : null;
+            const targetPlan = state.plans[targetKey] ? { ...state.plans[targetKey] } : null;
+
+            if (sourcePlan) {
+                state.plans[targetKey] = sourcePlan;
+            } else {
+                delete state.plans[targetKey];
+            }
+
+            if (targetPlan) {
+                state.plans[sourceKey] = targetPlan;
+            } else {
+                delete state.plans[sourceKey];
+            }
+
+            saveStorageData();
+            renderApp();
+        }
+
+        function openEditModal(dateKey) {
+            const plan = state.plans[dateKey] || { title: '', status: 'draft', tag: 'General', notes: '', budget: '' };
+
+            elements.modalDateKey.value = dateKey;
+            elements.modalDateDisplay.textContent = formatFullNiceDate(dateKey);
+            elements.modalTitle.value = plan.title || '';
+            elements.modalTag.value = plan.tag || 'General';
+            elements.modalNotes.value = plan.notes || '';
+            elements.modalBudget.value = plan.budget || '';
+
+            // Set Radio Status
+            const statusVal = plan.status || 'draft';
+            const statusRadio = elements.planForm.querySelector(`input[name="modal-status"][value="${statusVal}"]`);
+            if (statusRadio) statusRadio.checked = true;
+
+            // Show Modal
+            elements.planModal.classList.remove('hidden');
+            setTimeout(() => {
+                elements.planModal.classList.remove('opacity-0');
+                elements.planModal.firstElementChild.classList.remove('scale-95');
+                elements.modalTitle.focus();
+            }, 10);
+        }
+
+        function closeModal() {
+            elements.planModal.classList.add('opacity-0');
+            elements.planModal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                elements.planModal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Form Submit Handler
+        elements.planForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const dateKey = elements.modalDateKey.value;
+            const statusRadio = elements.planForm.querySelector('input[name="modal-status"]:checked');
+
+            state.plans[dateKey] = {
+                title: elements.modalTitle.value.trim(),
+                status: statusRadio ? statusRadio.value : 'draft',
+                tag: elements.modalTag.value,
+                notes: elements.modalNotes.value.trim(),
+                budget: elements.modalBudget.value
+            };
+
+            saveStorageData();
+            closeModal();
+            renderApp();
+        });
+
+        // Delete Plan Handler
+        elements.modalDeleteBtn.addEventListener('click', () => {
+            const dateKey = elements.modalDateKey.value;
+            if (state.plans[dateKey]) {
+                delete state.plans[dateKey];
+                saveStorageData();
+                closeModal();
+                renderApp();
+            }
+        });
+
+        elements.closeModalBtn.addEventListener('click', closeModal);
+        elements.modalCancelBtn.addEventListener('click', closeModal);
+
+        // Year Navigation
+        elements.prevYearBtn.addEventListener('click', () => {
+            state.currentYear--;
+            renderApp();
+        });
+
+        elements.nextYearBtn.addEventListener('click', () => {
+            state.currentYear++;
+            renderApp();
+        });
+
+        // Search Input Handler
+        elements.searchInput.addEventListener('input', (e) => {
+            state.searchQuery = e.target.value;
+            renderApp();
+        });
+
+        // Month Filter Handler
+        elements.monthFilter.addEventListener('change', (e) => {
+            state.filterMonth = e.target.value;
+            renderApp();
+        });
+
+        // Status Filter Buttons Handler
+        elements.statusFilterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.statusFilterBtns.forEach(b => {
+                    b.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-800', 'dark:text-white', 'shadow-sm');
+                    b.classList.add('text-slate-600', 'dark:text-slate-400');
+                });
+                btn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-800', 'dark:text-white', 'shadow-sm');
+                btn.classList.remove('text-slate-600', 'dark:text-slate-400');
+
+                state.filterStatus = btn.getAttribute('data-status-filter');
+                renderApp();
+            });
+        });
+
+        // Reset Filters Button
+        elements.resetFiltersBtn.addEventListener('click', () => {
+            state.searchQuery = '';
+            state.filterMonth = 'all';
+            state.filterStatus = 'all';
+            elements.searchInput.value = '';
+            elements.monthFilter.value = 'all';
+            elements.statusFilterBtns[0].click();
+        });
+
+        // View Mode Switcher
+        elements.viewGridBtn.addEventListener('click', () => {
+            state.viewMode = 'grid';
+            elements.viewGridBtn.className = 'p-1.5 rounded-lg text-slate-800 dark:text-white bg-white dark:bg-slate-800 shadow-sm transition';
+            elements.viewListBtn.className = 'p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition';
+            renderApp();
+        });
+
+        elements.viewListBtn.addEventListener('click', () => {
+            state.viewMode = 'list';
+            elements.viewListBtn.className = 'p-1.5 rounded-lg text-slate-800 dark:text-white bg-white dark:bg-slate-800 shadow-sm transition';
+            elements.viewGridBtn.className = 'p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition';
+            renderApp();
+        });
+
+        // Sample Data Generator
+        elements.sampleDataBtn.addEventListener('click', () => {
+            const weekends = getWeekendsOfYear(state.currentYear);
+            const sampleActivities = [
+                { title: 'Mountain Hiking Trip', tag: 'Outdoor', status: 'confirmed', budget: '60', notes: 'Pack trail mix & hiking boots' },
+                { title: 'Brunch with Highschool Friends', tag: 'Social', status: 'confirmed', budget: '40', notes: 'Booked table for 5' },
+                { title: 'Visit Local Art Gallery', tag: 'Event', status: 'draft', budget: '25', notes: 'Exhibition opens at 10 AM' },
+                { title: 'Weekend Getaway to Beach', tag: 'Travel', status: 'confirmed', budget: '250', notes: 'Hotel check-in at 3 PM' },
+                { title: 'Deep Clean Garage & Yard Work', tag: 'Chores', status: 'draft', budget: '0', notes: 'Need trash bags' },
+                { title: 'Spa & Sauna Day', tag: 'Relax', status: 'confirmed', budget: '110', notes: 'Appointment at 2 PM' },
+                { title: 'Concert in the Park', tag: 'Event', status: 'draft', budget: '30', notes: 'Bring lawn chairs' },
+                { title: 'Board Game Night', tag: 'Social', status: 'confirmed', budget: '15', notes: 'Buy snacks and drinks' },
+            ];
+
+            // Randomly scatter plans across weekends
+            weekends.forEach((w, index) => {
+                if (index % 2 === 0) {
+                    const sampleSat = sampleActivities[index % sampleActivities.length];
+                    state.plans[w.saturday] = { ...sampleSat };
+                }
+                if (index % 3 === 0) {
+                    const sampleSun = sampleActivities[(index + 3) % sampleActivities.length];
+                    state.plans[w.sunday] = { ...sampleSun };
+                }
+            });
+
+            saveStorageData();
+            renderApp();
+        });
+
+        // Clear Year Data
+        elements.clearYearBtn.addEventListener('click', () => {
+            const weekends = getWeekendsOfYear(state.currentYear);
+            weekends.forEach(w => {
+                delete state.plans[w.saturday];
+                delete state.plans[w.sunday];
+            });
+            saveStorageData();
+            renderApp();
+        });
+
+        // Export JSON Data
+        elements.exportJsonBtn.addEventListener('click', () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.plans, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `weekend_plans_${state.currentYear}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        });
+
+        // Dark Theme Toggle
+        elements.themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('weekend_hub_theme', isDark ? 'dark' : 'light');
+        });
+
+        window.onload = function () {
+            // Restore saved theme preference
+            const savedTheme = localStorage.getItem('weekend_hub_theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            // Load stored plan data
+            loadStorageData();
+
+            // Render Application
+            renderApp();
+        };
+    </script>
+</body>
+</html>
